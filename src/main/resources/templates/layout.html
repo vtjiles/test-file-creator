@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="File Loader Helper"/>
+  <meta name="author" content="Jay Hogan"/>
+  <title>File Loader Helper</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
+  <link rel="stylesheet" th:href="@{../../css/style.css}"/>
+</head>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="/">File Loader Helper</a>
+  </div>
+</nav>
+<div class="container">
+  <div layout:fragment="header">Layout</div>
+  <div layout:fragment="content">Fake content</div>
+</div>
+</body>
+</html>

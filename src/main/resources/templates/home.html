@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout" layout:decorator="layout">
+<head>
+  <title>Home</title>
+</head>
+<body>
+  <div layout:fragment="header" class="jumbotron">
+    <div class="container">
+      <h1>Instructions</h1>
+      <p>This little application can help you build test files more quickly and with less fuss.</p>
+      <p>Download the template to get started.</p>
+      <p><a class="btn btn-primary btn-lg" th:href="@{../../template.xlsx}" role="button">Download Template »</a></p>
+    </div>
+  </div>
+
+  <div layout:fragment="content" class="container">
+
+    <form class="form-inline" method="POST" enctype="multipart/form-data" action="/upload">
+      <div class="form-group">
+        <input class="form-control" type="file" id="file" name="file"/>
+      </div>
+      <input class="btn btn-primary" type="submit" value="Upload"/>
+    </form>
+
+    <ul class="alert alert-danger" role="alert" th:if="${errors != null}">
+      <li th:each="error : ${errors}" th:text="${error}"></li>
+    </ul>
+  </div>
+</body>
+</html>

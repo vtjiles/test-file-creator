@@ -1,0 +1,6 @@
+.alert {
+    margin-top: 20px;
+}
+.alert li {
+    list-style-position: inside;
+}
