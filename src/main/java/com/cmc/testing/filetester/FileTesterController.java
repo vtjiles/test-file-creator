@@ -1,6 +1,7 @@
 package com.cmc.testing.filetester;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -11,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 
 @Controller
@@ -28,6 +30,19 @@ public class FileTesterController {
     public String home() {
         return "home";
     }
+
+    @RequestMapping(value = "/template", method = RequestMethod.GET)
+    public ResponseEntity<InputStreamResource> downloadTemplate() {
+        final HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=template.xlsx");
+
+        InputStream templateStream = this.getClass().getResourceAsStream("template.xlsx");
+        InputStreamResource inputStreamResource = new InputStreamResource(templateStream);
+
+        return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+    }
+
 
     @RequestMapping(value="/upload", method= RequestMethod.POST)
     public ResponseEntity<byte[]> handleFileUpload(@RequestParam("file") MultipartFile file) throws IOException {

@@ -1,10 +1,7 @@
 package com.cmc.testing.filetester;
 
 import com.google.common.base.Strings;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
 
@@ -91,21 +88,21 @@ public class FileTransformer {
 
         StringBuilder outputFileBuilder = new StringBuilder();
         List<String> errors = new ArrayList<String>();
+        DataFormatter formatter = new DataFormatter(true);
         while (rowIt.hasNext()) {
             Row dataRow = rowIt.next();
 
             for (Field field : fields) {
                 try {
                     Cell cell = dataRow.getCell(fieldMap.get(field.getName()), Row.CREATE_NULL_AS_BLANK);
-                    String value = cell.getCellType() == Cell.CELL_TYPE_NUMERIC ? handleNumeric(cell, field) : cell.getStringCellValue();
 
-                    outputFileBuilder.append(Strings.padEnd(value, field.getLength(), ' '));
+                    outputFileBuilder.append(Strings.padEnd(formatter.formatCellValue(cell), field.getLength(), ' '));
                 } catch (Exception e) {
                     errors.add(String.format("Data row %d, exception: %s", dataRow.getRowNum(), e.getMessage()));
                 }
             }
 
-            outputFileBuilder.append('\n');
+            outputFileBuilder.append(System.lineSeparator());
         }
 
         if (!errors.isEmpty()) {
@@ -130,18 +127,6 @@ public class FileTransformer {
             fieldMap.put(cell.getStringCellValue(), cell.getColumnIndex());
         }
         return fieldMap;
-    }
-
-    /**
-     * Zero pads numeric values to the length of the field.
-     *
-     * @param cell the cell containing the numeric value
-     * @param field the field
-     * @return zero padded number
-     */
-    private String handleNumeric(Cell cell, Field field) {
-        String format = "%0" + field.getLength() + "d";
-        return String.format(format, cell.getNumericCellValue());
     }
 
     /**
