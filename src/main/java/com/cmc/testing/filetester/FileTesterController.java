@@ -61,6 +61,6 @@ public class FileTesterController {
 
     @ExceptionHandler(Exception.class)
     private ModelAndView fileTransformExceptionHandler(Exception e) {
-        return new ModelAndView("home", "errors", Collections.singletonList(e.getMessage()));
+        return new ModelAndView("home", "errors", Collections.singletonList("Unknown error"));
     }
 }

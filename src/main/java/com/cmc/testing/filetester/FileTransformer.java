@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -11,6 +12,8 @@ import java.util.*;
 
 @Component
 public class FileTransformer {
+    private static final String EXPORT_TYPE_DELIMITED = "Delimited";
+    private static final List<String> EXPORT_TYPES = Arrays.asList("Fixed Length", EXPORT_TYPE_DELIMITED);
 
     /**
      * Transform an Excel file that specifies a file loader format sheet and data sheet into
@@ -24,64 +27,26 @@ public class FileTransformer {
     public byte[] transform(final byte[] bytes) throws FileTransformException, IOException {
         Workbook wb = new XSSFWorkbook(new ByteArrayInputStream(bytes));
         validateWorkbook(wb);
-        return transformData(wb, extractFields(wb));
+
+        return transformData(wb);
     }
 
     /**
-     * Extracts the format fields from the first Sheet in the specified Workbook.
+     * Transforms the data from the Workbook.
      *
-     * @param wb th Workbook
-     * @return list of file format fields
-     * @throws FileTransformException when the sheet is in an unexpected format
-     */
-    private List<Field> extractFields(Workbook wb) throws FileTransformException {
-        Sheet formatSheet = wb.getSheetAt(0);
-        validateFormatSheet(formatSheet);
-
-        Iterator<Row> rowIt = formatSheet.rowIterator();
-        rowIt.next(); // skip column headers
-
-        List<Field> fields = new ArrayList<Field>();
-        List<String> errors = new ArrayList<String>();
-        while(rowIt.hasNext()) {
-            Row row = rowIt.next();
-
-            if (row.getLastCellNum() < 2) {
-                errors.add(String.format("Format sheet, row %d: Should have 2 cells.", row.getRowNum()));
-            } else {
-                String fieldName = row.getCell(0).getStringCellValue();
-
-                Cell lengthCell = row.getCell(1);
-                if (lengthCell.getCellType() != Cell.CELL_TYPE_NUMERIC) {
-                    errors.add(String.format("Format sheet, row %d: Length cell is not numeric.", row.getRowNum()));
-                } else {
-                    fields.add(new Field(fieldName, (int) lengthCell.getNumericCellValue()));
-                }
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            throw new FileTransformException(errors);
-        }
-
-        return fields;
-    }
-
-    /**
-     * Transforms the data from the second Sheet in the specified Workbook using the specified format fields.
-     *
-     * @param wb the workbook
-     * @param fields the fields
+     * @param wb the Workbook
      * @return the output file as a byte[]
      * @throws FileTransformException when the data sheet is in an unexpected format
      */
-    private byte[] transformData(Workbook wb, List<Field> fields) throws FileTransformException {
+    private byte[] transformData(Workbook wb) throws FileTransformException {
+        ExportOptions exportOptions = getExportOptions(wb);
+
         Sheet dataSheet = wb.getSheetAt(1);
         validateDataSheet(dataSheet);
 
         // Map the fields to the data sheet column headings: key=field/column name, value=data sheet cell index
         Map<String, Integer> fieldMap = buildFieldMap(dataSheet);
-        validateDataFields(fields, fieldMap);
+        validateDataFields(exportOptions.getFields(), fieldMap);
 
         Iterator<Row> rowIt = dataSheet.rowIterator();
         rowIt.next(); // skip column heading
@@ -92,11 +57,21 @@ public class FileTransformer {
         while (rowIt.hasNext()) {
             Row dataRow = rowIt.next();
 
-            for (Field field : fields) {
+            Iterator<Field> fieldIterator = exportOptions.getFields().iterator();
+            while(fieldIterator.hasNext()) {
+                Field field = fieldIterator.next();
                 try {
                     Cell cell = dataRow.getCell(fieldMap.get(field.getName()), Row.CREATE_NULL_AS_BLANK);
+                    String value = formatter.formatCellValue(cell);
 
-                    outputFileBuilder.append(Strings.padEnd(formatter.formatCellValue(cell), field.getLength(), ' '));
+                    if (exportOptions.isDelimited()) {
+                        outputFileBuilder.append(value);
+                        if (fieldIterator.hasNext()) {
+                            outputFileBuilder.append(exportOptions.getDelimiter());
+                        }
+                    } else {
+                        outputFileBuilder.append(Strings.padEnd(value, field.getLength(), ' '));
+                    }
                 } catch (Exception e) {
                     errors.add(String.format("Data row %d, exception: %s", dataRow.getRowNum(), e.getMessage()));
                 }
@@ -110,6 +85,65 @@ public class FileTransformer {
         }
 
         return outputFileBuilder.toString().getBytes();
+    }
+
+    /**
+     * Extract the ExportOptions from the Workbook.
+     *
+     * @param wb the Workbook
+     * @return ExportOptions
+     */
+    private ExportOptions getExportOptions(Workbook wb) {
+        Sheet formatSheet = wb.getSheetAt(0);
+        ExportOptions exportOptions = validateFormatSheet(formatSheet);
+        exportOptions.addFields(extractFields(formatSheet, exportOptions));
+        return exportOptions;
+    }
+
+    /**
+     * Extracts the format fields from the format Worksheet.
+     *
+     * @param formatSheet th format worksheet
+     * @param exportOptions ExportOptions
+     * @return list of file format fields
+     * @throws FileTransformException when the sheet is in an unexpected format
+     */
+    private List<Field> extractFields(Sheet formatSheet, ExportOptions exportOptions) throws FileTransformException {
+        int numCells = exportOptions.isDelimited() ? 1 : 2;
+        Iterator<Row> rowIt = formatSheet.rowIterator();
+        rowIt.next(); // skip option headers
+        rowIt.next(); // skip option values
+        rowIt.next(); // skip empty row
+        rowIt.next(); // skip column headers
+
+        List<Field> fields = new ArrayList<Field>();
+        List<String> errors = new ArrayList<String>();
+        while(rowIt.hasNext()) {
+            Row row = rowIt.next();
+
+            if (row.getLastCellNum() < numCells) {
+                errors.add(String.format("Format sheet, row %d: Should have 2 cells.", row.getRowNum()));
+            } else {
+                String fieldName = row.getCell(0).getStringCellValue();
+
+                if (exportOptions.isDelimited()) {
+                    fields.add(new Field(fieldName));
+                } else {
+                    Cell lengthCell = row.getCell(1);
+                    if (lengthCell.getCellType() != Cell.CELL_TYPE_NUMERIC) {
+                        errors.add(String.format("Format sheet, row %d: Length cell is not numeric.", row.getRowNum()));
+                    } else {
+                        fields.add(new Field(fieldName, (int) lengthCell.getNumericCellValue()));
+                    }
+                }
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new FileTransformException(errors);
+        }
+
+        return fields;
     }
 
     /**
@@ -155,10 +189,22 @@ public class FileTransformer {
      * @param formatSheet the format Sheet
      * @throws FileTransformException
      */
-    private void validateFormatSheet(Sheet formatSheet) throws FileTransformException {
-        if (formatSheet.getLastRowNum() < 2) {
-            throw new FileTransformException(Collections.singletonList("Format sheet should have at least 2 rows."));
+    private ExportOptions validateFormatSheet(Sheet formatSheet) throws FileTransformException {
+        if (formatSheet.getLastRowNum() < 5) {
+            throw new FileTransformException(Collections.singletonList("Format sheet should have at least 5 rows."));
         }
+
+        String exportType = formatSheet.getRow(1).getCell(0, Row.CREATE_NULL_AS_BLANK).getStringCellValue();
+        String delimiter = formatSheet.getRow(1).getCell(1, Row.CREATE_NULL_AS_BLANK).getStringCellValue();
+        boolean delimited = exportType.equals(EXPORT_TYPE_DELIMITED);
+
+        if (!EXPORT_TYPES.contains(exportType)) {
+            throw new FileTransformException(Collections.singletonList("Export Type must be in list: " + EXPORT_TYPES));
+        } else if (delimited && StringUtils.isEmpty(delimiter)) {
+            throw new FileTransformException(Collections.singletonList("Must choose delimiter for Delimited export type."));
+        }
+
+        return new ExportOptions(delimited, delimiter);
     }
 
     /**
@@ -189,7 +235,7 @@ public class FileTransformer {
                     fields.size()));
         }
 
-        for(Field field : fields) {
+        for (Field field : fields) {
             if (!fieldMap.containsKey(field.getName())) {
                 errors.add(String.format("There is no data column for field '%s'", field.getName()));
             }
