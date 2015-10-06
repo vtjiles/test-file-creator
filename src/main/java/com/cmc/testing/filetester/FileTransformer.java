@@ -21,10 +21,9 @@ public class FileTransformer {
      *
      * @param bytes byte array containing Excel file in binary format
      * @return byte array of output text file
-     * @throws FileTransformException
      * @throws IOException
      */
-    public byte[] transform(final byte[] bytes) throws FileTransformException, IOException {
+    public byte[] transform(final byte[] bytes) throws IOException {
         Workbook wb = new XSSFWorkbook(new ByteArrayInputStream(bytes));
         validateWorkbook(wb);
 
@@ -49,7 +48,8 @@ public class FileTransformer {
         validateDataFields(exportOptions.getFields(), fieldMap);
 
         Iterator<Row> rowIt = dataSheet.rowIterator();
-        rowIt.next(); // skip column heading
+        // skip column heading
+        rowIt.next();
 
         StringBuilder outputFileBuilder = new StringBuilder();
         List<String> errors = new ArrayList<String>();
@@ -111,10 +111,18 @@ public class FileTransformer {
     private List<Field> extractFields(Sheet formatSheet, ExportOptions exportOptions) throws FileTransformException {
         int numCells = exportOptions.isDelimited() ? 1 : 2;
         Iterator<Row> rowIt = formatSheet.rowIterator();
-        rowIt.next(); // skip option headers
-        rowIt.next(); // skip option values
-        rowIt.next(); // skip empty row
-        rowIt.next(); // skip column headers
+
+        // skip option headers
+        rowIt.next();
+
+        // skip option values
+        rowIt.next();
+
+        // skip empty row
+        rowIt.next();
+
+        // skip column headers
+        rowIt.next();
 
         List<Field> fields = new ArrayList<Field>();
         List<String> errors = new ArrayList<String>();
