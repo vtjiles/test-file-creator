@@ -20,18 +20,4 @@ public class Field {
     public int getLength() {
         return length;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Field field = (Field) o;
-        return !name.equals(field.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return name.hashCode();
-    }
 }
