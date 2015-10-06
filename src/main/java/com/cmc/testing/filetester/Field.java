@@ -27,9 +27,11 @@ public class Field {
         if (o == null || getClass() != o.getClass()) return false;
 
         Field field = (Field) o;
+        return !name.equals(field.name);
+    }
 
-        if (name != null ? !name.equals(field.name) : field.name != null) return false;
-
-        return true;
+    @Override
+    public int hashCode() {
+        return name.hashCode();
     }
 }
