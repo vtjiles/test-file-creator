@@ -11,6 +11,10 @@ public class Field {
     public Field(final String name, final int length) {
         this.name = name;
         this.length = length;
+
+        if (name == null) {
+            throw new IllegalArgumentException("Name cannot be null");
+        }
     }
 
     public String getName() {
