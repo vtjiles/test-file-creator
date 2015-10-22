@@ -25,7 +25,7 @@ public class Field {
         return length;
     }
 
-
+/*
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -39,4 +39,5 @@ public class Field {
     public int hashCode() {
         return name.hashCode();
     }
+*/
 }
