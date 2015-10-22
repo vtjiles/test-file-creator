@@ -25,7 +25,7 @@ public class Field {
         return length;
     }
 
-/*
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -34,7 +34,7 @@ public class Field {
         Field field = (Field) o;
         return name.equals(field.name);
     }
-
+/*
     @Override
     public int hashCode() {
         return name.hashCode();
