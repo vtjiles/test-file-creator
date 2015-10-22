@@ -34,10 +34,10 @@ public class Field {
         Field field = (Field) o;
         return name.equals(field.name);
     }
-/*
+
     @Override
     public int hashCode() {
         return name.hashCode();
     }
-*/
+
 }
