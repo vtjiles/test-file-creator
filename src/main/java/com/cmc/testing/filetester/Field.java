@@ -35,10 +35,8 @@ public class Field {
         return name.equals(field.name);
     }
 
-    /*
     @Override
     public int hashCode() {
         return name.hashCode();
     }
-    */
 }
