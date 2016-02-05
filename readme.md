@@ -11,6 +11,8 @@ Steps to deploy
 2. Copy the JAR file from the target directory onto the deployment server
 3. Start the embedded server by running: java -jar file-tester.jar
 
+asdf
+
 This will start the server on port 8080.
 
 Enjoy, please!
